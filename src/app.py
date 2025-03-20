@@ -36,7 +36,7 @@ def pagina_no_encontrada(error):
             </style>
         </head>
         <body>
-            <h1>Error 404 - Página No Encontrada</h1>
+            <h1>Error 404 - Página No Disponible</h1>
             <p>Lo sentimos, la página que estás buscando no existe o ha sido movida.  
             Verifica la URL e intenta nuevamente.</p>
         </body>
