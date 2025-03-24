@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_mysqldb import MySQL
 
 from config import config
@@ -23,6 +23,7 @@ def listar_cursos():
     except Exception as ex:
         return jsonify({'mensaje':"Error"})
 
+
 @app.route('/cursos/<codigo>', methods=['GET'])
 def leer_curso(codigo):
     try:
@@ -37,6 +38,78 @@ def leer_curso(codigo):
             return jsonify({'mensaje':"Curso no encontrado"})
     except Exception as ex:
         return jsonify({'mensaje':"Error"})
+@app.route('/cursos', methods=['POST'])
+def registrar_curso():
+    try:
+        cursor = conexion.connection.cursor()
+
+        # Verificar si el código ya existe
+        sql_verificar = "SELECT codigo FROM curso WHERE codigo = %s"
+        cursor.execute(sql_verificar, (request.json['codigo'],))
+        existe = cursor.fetchone()
+
+        if existe:
+            return jsonify({'mensaje': "No se puede ingresar, código duplicado"}), 400  # Respuesta con error 400
+
+        # Si no existe, insertar el nuevo curso
+        sql_insertar = "INSERT INTO curso (codigo, nombre, creditos) VALUES (%s, %s, %s)"
+        valores = (request.json['codigo'], request.json['nombre'], request.json['creditos'])
+        cursor.execute(sql_insertar, valores)
+        conexion.connection.commit()
+
+        return jsonify({'mensaje': "Curso registrado correctamente"}), 201  # Código 201 para creación exitosa
+    except Exception as ex:
+        return jsonify({'mensaje': "Error en el servidor"}), 500
+    
+@app.route('/cursos/<codigo>', methods=['PUT'])
+def actualizar_curso(codigo):    
+    try:
+        cursor = conexion.connection.cursor()
+
+        # Verificar si el curso existe antes de actualizarlo
+        sql_verificar = "SELECT codigo FROM curso WHERE codigo = %s"
+        cursor.execute(sql_verificar, (codigo,))
+        existe = cursor.fetchone()
+
+        if not existe:
+            return jsonify({'mensaje': "No se puede actualizar, código no encontrado"}), 404  # Respuesta con error 404
+
+        # Si el curso existe, proceder con la actualización
+        sql_actualizar = """UPDATE curso 
+                            SET nombre = %s, creditos = %s 
+                            WHERE codigo = %s"""
+        valores = (request.json['nombre'], request.json['creditos'], codigo)
+
+        cursor.execute(sql_actualizar, valores)
+        conexion.connection.commit()
+
+        return jsonify({'mensaje': "Curso actualizado correctamente"}), 200  # Código 200 para éxito
+    except Exception as ex:
+        return jsonify({'mensaje': "Error en el servidor"}), 500
+
+
+@app.route('/cursos/<codigo>', methods=['DELETE'])
+def eliminar_curso(codigo):
+    try:
+        cursor = conexion.connection.cursor()
+
+        # Verificar si el curso existe
+        sql_verificar = "SELECT codigo FROM curso WHERE codigo = %s"
+        cursor.execute(sql_verificar, (codigo,))
+        existe = cursor.fetchone()
+
+        if not existe:
+            return jsonify({'mensaje': "Código de curso no encontrado"}), 404  # Código 404 si no existe
+
+        # Si existe, proceder con la eliminación
+        sql_eliminar = "DELETE FROM curso WHERE codigo = %s"
+        cursor.execute(sql_eliminar, (codigo,))
+        conexion.connection.commit()  # Confirmar eliminación
+
+        return jsonify({'mensaje': "Curso eliminado correctamente"}), 200  # Código 200 para éxito
+    except Exception as ex:
+        return jsonify({'mensaje': "Error en el servidor"}), 500
+
 
 def pagina_no_encontrada(error):
     return""" 
